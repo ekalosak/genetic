@@ -55,6 +55,29 @@ def make_poly(deg, coefLow, coefHigh):
     return [coefLow + random.random() * (coefHigh - coefLow)
         for _ in range(deg)]
 
+def make_init_pop(pop_size, chromosomes, ploidy, alleles_per_chromosome,
+        allele_range=None, alleles=None, method='uniform_categorical'):
+    supported_methods = ['uniform_float', 'uniform_categorical']
+    assert method in supported_methods
+
+    if method == 'uniform_categorical':
+        assert allele_range == None
+        assert type(alleles) == type([1,2,3])
+        return np.random.choice(
+                alleles,
+                size=[pop_size, chromosomes, ploidy, alleles_per_chromosome]
+            )
+
+    if method == 'uniform_float':
+        assert type(allele_range) == type([1,2,3]) & len(allele_range) == 2
+        assert alleles == None
+        return np.random.uniform(
+            low = allele_range[0],
+            high = allele_range[1],
+            size = (pop_size, chromosomes, ploidy, alleles_per_chromosome)
+        )
+
+
 def mate(p, q, cross = 0.6, method='random'):
     # Mates two organisms
     # cross :: (0 < cross < 1) => Float
@@ -82,7 +105,7 @@ def mutate(p, rate = 0.3):
         ]
     return(mp)
 
-def poly_fitness(p, tp, x_range = [-10,10], n_samp=200):
+def ols_polynomial_fitness(p, tp, x_range=[-10,10], n_samp=200):
     # Apply OLS fitness to polynomial organisms p and tp
     #   p :: [Float]
     #   tp :: [Float]
