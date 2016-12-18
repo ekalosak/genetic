@@ -26,7 +26,7 @@ ploidy = 2 # P, ploidy
 alleles_per_chromosome = 7
 allele_range = [0, 5]
 
-## TODO Create fitness rule
+## Create fitness rule - in this case each organism shares fitness
 fitness = lambda org: NotImplemented
 
 ## Make initial population for propagation
@@ -36,20 +36,21 @@ fitness = lambda org: NotImplemented
 init_pop = np.random.uniform(
         low = allele_range[0],
         high = allele_range[1],
-        size = (pop_size, ploidy*chromosomes, alleles_per_chromosome)
+        size = (pop_size, chromosomes, ploidy, alleles_per_chromosome)
     )
 
-# whole_pop is an np.matrix size generations by pop_size by ploidy
+# whole_pop is an np.matrix size G*J*P*N*K
+#   G generations, J organisms, ploidy P, P*N chromosomes, K alleles
 whole_pop = np.empty(
-        [generations, pop_size, ploidy],
-        dtype = np.uint8
+        [generations, pop_size, chromosomes, ploidy, alleles_per_chromosome],
+        dtype = np.float32
     )
 whole_pop[0] = init_pop
 
 ### TODO
 for i in range(1, generations):
     ## Apply fitness function to current generation
-    parent_fitness = ut.fitness(whole_pop[i-1])
+    parent_fitness = fitness(whole_pop[i-1])
     ## Mate individuals proportional to their fitness
     pdb.set_trace()
     ## Assign the most fit offspring to the next part of history
