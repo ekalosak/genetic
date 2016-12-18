@@ -4,3 +4,5 @@ equivalence of genetic optima to solutions to functional calculus equations.
 First part: bachristochrome
 Second part: NASA antenae
 Third part: TBA different application
+
+TODO: refactor ../genetic/ into utilities herein
