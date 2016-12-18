@@ -47,6 +47,7 @@ whole_pop[0] = init_pop
 #   (e.g. true polynomial range over x domain proportional to sustainable
 #   population size - if the range gets too small, world e.g. gets too hot and
 #   nothing survives)
+# Refactor everything into utilities to clean for readability.
 
 ### IDEAS
 # Give each allele or combination morphological meaning
