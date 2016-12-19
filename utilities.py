@@ -78,8 +78,8 @@ def make_init_pop(pop_size, chromosomes, ploidy, alleles_per_chromosome,
         )
 
 
-def mate(p, q, cross = 0.6, method='random'):
-    # Mates two organisms
+def mate(p, q, cross = 0.6, method='elemwise'):
+    # Mates two polynomial organisms
     # cross :: (0 < cross < 1) => Float
     # method :: String
     #   'elemwise' -> each allele potentially contributes to offspring
