@@ -1,7 +1,9 @@
 # Eric Kalosa-Kenyon
 # Dec 18, 2016
 #
-#   This script simulates evolution of biological creatures.
+#   This script simulates evolution of diploid biological creatures with
+#   categorical alleles, one allele per chromosome, and uniform fitness across
+#   genotypes. There is no environment. Mutation is 
 #
 # Sources:
 #   http://cooplab.github.io/popgen-notes/#the-coalescent-and-patterns-of-neutral-diversity
@@ -18,9 +20,76 @@ chromosomes = 1 # N, so if e.g. N = 4 then 2N=8
 ploidy = 2 # P, ploidy
 alleles_per_chromosome = 1
 alleles = ['A', 'B', 'C', 'D', 'E']
+mutation_rate = 0.08 # alleles per individual per generation, see mutate()
 
 ## Create fitness rule - in this case each organism is equally fit
-fitness = lambda org: 1
+def fitness(population):
+    result = np.empty(len(population), dtype=np.dtype(float))
+    i = 0
+    for organism in population:
+        fit = 1 # Each allele confers equal fitness regardless of environment
+        result[i] = fit
+        i = i + 1
+    return result
+
+## Create a mating scheme
+def mutate(organism, rate):
+    # apply mutation to organim uniformly at random across all chromosomes,
+    # coppies, and alleles.
+    # number of mutations in an organism is Poisson distributed
+    # assumes each locus can choose from the same alleles
+    num_mutations = np.random.poisson(rate*organism.size)
+    if num_mutations > organism.size: num_mutations = organism.size
+
+    # with replacement:
+    for _ in range(num_mutations):
+        mutation_indices = tuple([np.random.choice(k) for k in organism.shape])
+        new_allele = np.random.choice(alleles)
+        organism[mutation_indices] = new_allele
+    return organism
+
+def mate_organisms(par1, par2):
+    assert par1.shape == par2.shape # parents have same number of chromosomes,
+                                    # copy numbers, and alleles on a copy
+    offspring = np.empty(par1.shape, dtype=np.dtype(str))
+    i, k = 0, 0
+    for i in range(par1.shape[0]): # for each chromosome
+        for k in range(par1.shape[2]): # for each allele
+            # extract variants of the k'th allele on the i'th chromosome
+            par1_variants = par1[i, :, k]
+            par2_variants = par2[i, :, k]
+            # select one variant from par1 and one from par2 for the offspring
+            offspring[i, :, k] = np.array([
+                    np.random.choice(par1_variants, 1)[0],
+                    np.random.choice(par2_variants, 1)[0]
+                ])
+    return offspring
+
+def mate_population(par_pop):
+    # offspring produced as crosses of organisms with frequency proportional to
+    # their fitness
+
+    par_fit = fitness(par_pop)
+    par_fit_prob = par_fit / par_fit.sum()
+    new_pop = np.empty(par_pop.shape, dtype=np.dtype(str))
+
+    # make pop_size new babies
+    for i in range(pop_size):
+        # note that there is no crossover between copies of chromosomes
+        parent_1, parent_2 = par_pop[
+                    np.random.choice(
+                        a = range(len(par_pop)),
+                        size = 2,
+                        replace = False,
+                        p = par_fit_prob
+                    )
+                ]
+        new_pop[i] = mutate(
+                organism = mate_organisms(parent_1, parent_2),
+                rate = mutation_rate
+            )
+
+    return new_pop
 
 ## Make initial population for propagation
 # init_pop is a np.matrix (J*P*N*K)
@@ -34,47 +103,17 @@ init_pop = ut.make_init_pop(pop_size=pop_size, chromosomes=chromosomes,
 #   G generations, J organisms, ploidy P, P*N chromosomes, K alleles
 whole_pop = np.empty(
         [generations, pop_size, chromosomes, ploidy, alleles_per_chromosome],
-        dtype = np.float32
+        dtype = np.dtype(str)
     )
-pdb.set_trace()
 whole_pop[0] = init_pop
+# whole_pop[generation][organism][chromosome][copy][allele]
 
-### TODO
+## Simulate evolution
 for i in range(1, generations):
-    ## Apply fitness function to current generation
-    parent_fitness = fitness(whole_pop[i-1])
-    ## Mate individuals proportional to their fitness
-    pdb.set_trace()
-    ## Assign the most fit offspring to the next part of history
+    parent_pop = whole_pop[i-1]
+    new_generation = mate_population(parent_pop)
     whole_pop[i] = new_generation
 
+## Visualize
+pdb.set_trace()
 # Refactor everything into utilities to clean for readability.
-
-### IDEAS
-# Give each allele or combination morphological meaning
-#   e.g. first, just higher number is higher fitness. Trivial but functional.
-#       second, LES, drought tollerance, etc. all parameterized
-#       ecophysiologically.
-#       third, tolerance to pests, diseases, and eaters who all have their own
-#       evolutionary path.
-#       fourth, maybe find a way to grow new adaptive morphological traits
-#       rather than just strategies of movement, reproduction, and potentially
-#       social order (fish swim in schools) and trait parameterization.
-#
-# Allow for input from better climate models, crop models, economic models.
-# It wants to be a full fledged package simulating interactions between
-# artificial and naturally observed organisms, their environments, and economic
-# pressures (like consumption, shipping, anthropogenic climate change). Could be
-# used to show potential ramifications of different energy, consumption, etc.
-# policies. Could be used to generate different stories of life on earth under
-# different geoclimactic conditions. Originally just for seeing how plants will
-# rediversify as extinction events pass, useful for looking at economy as an
-# evolutionary force acting on climate and agricultural genetics and crop
-# productivity.
-#
-# Allow for multiple generation life spans, fitness based probabilistic life
-#   spans
-# Allow for variable population size dependent on climate state
-#   (e.g. true polynomial range over x domain proportional to sustainable
-#   population size - if the range gets too small, world e.g. gets too hot and
-#   nothing survives)
